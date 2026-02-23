@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Absensi Simpang Kawat</title>
+  <link rel="icon" href="https://raw.githubusercontent.com/generussimka-cmyk/Logo/main/ldii-jatim.png" />
+  <script src="https://unpkg.com/html5-qrcode"></script>
+  <style>
+    body {
+      margin: 0;
+      font-family: sans-serif;
+      background: #eee;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      height: 100dvh;
+      overflow: hidden;
+    }
+    #reader { width: 300px; max-width: 90%; margin-top: 40px; }
+    #result {
+      margin-top: 20px;
+      font-weight: bold;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <h2>Absensi QR</h2>
+  <div id="reader"></div>
+  <div id="result">Silakan scan QR siswa...</div>
+
+  <script>
+    const resultDiv = document.getElementById("result");
+    const currentUser = { role: "guru", kelas: "10A" }; // Contoh, bisa dinamis
+
+    function onScanSuccess(decodedText) {
+      if (!decodedText) return;
+      resultDiv.innerHTML = `Memproses: ${decodedText} ...`;
+
+      fetch("https://script.google.com/macros/s/AKfycbxLBFlnf2PpbKKZRHbN1wyq-AhUTwwF4rCslu1k2requc5YfWvygdUo4_7XYtIwxtjQEw/exec", {
+        method: "POST",
+        body: JSON.stringify({ 
+          nisn: decodedText, 
+          role: currentUser.role, 
+          kelas: currentUser.kelas 
+        }),
+        headers: { "Content-Type": "application/json" }
+      })
+      .then(res => res.json())
+      .then(data => {
+        if(data.success){
+          resultDiv.innerHTML = `✅ ${decodedText} - ${data.message}`;
+        } else {
+          resultDiv.innerHTML = `❌ Error: ${data.message}`;
+        }
+      })
+      .catch(err => {
+        resultDiv.innerHTML = `❌ Error: ${err.message}`;
+      });
+    }
+
+    const html5QrCode = new Html5Qrcode("reader");
+    html5QrCode.start(
+      { facingMode: "environment" },
+      { fps: 10, qrbox: { width: 250, height: 250 } },
+      onScanSuccess
+    ).catch(err => {
+      resultDiv.innerHTML = `❌ Gagal mengakses kamera: ${err}`;
+    });
+  </script>
+</body>
+</html>
